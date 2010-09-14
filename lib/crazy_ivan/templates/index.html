@@ -122,8 +122,9 @@
         </div>
         
         <div class="output">
-          <div class="version" style="display: none"><pre class="error"><%= version.error %></pre></div>
+          <div class="version"><pre class="error"><%= version.error %></pre></div>
           
+          <a href="#" onclick="$(this).parent().children(<%= "'.update'" %>).show(); $(this).hide(); return false;">Show update output</a>
           <div class="update" style="display: none">
             <pre><%= update.output %></pre>
             <pre class="error"><%= update.error %></pre>
