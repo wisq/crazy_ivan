@@ -151,7 +151,8 @@
       });
       
       function addProjectToJson(name) {
-        var projectJsonPath = name + "/reports.json";
+        var projectJsonPath = name + "/reports.json?"
+          + Math.floor(new Date().getTime() / 300000); // refresh every 5 mins
         
         jQuery.getJSON(projectJsonPath, function(data) {
           json.projects.push({'name': name, reports: data});
