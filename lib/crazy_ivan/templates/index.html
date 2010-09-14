@@ -193,7 +193,14 @@
           // create project holder div
           $('#projects').append(tmpl("projectTemplate", {projectName: name, projectId: domId}));
           
-          jQuery.each(project.reports.reverse(), function(i, report) {
+          project.reports.sort(function (a, b) {
+            left  = Date.parse(a.timestamp.finish);
+            right = Date.parse(b.timestamp.finish);
+
+            return right.compareTo(left);
+          });
+
+          jQuery.each(project.reports, function(i, report) {
             var version = report.version.output;
             var resultJsonPath = name + "/" + version + ".json";
             var domId = name.replace(/\./g, "");      // remove . from id name
