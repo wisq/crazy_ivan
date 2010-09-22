@@ -57,48 +57,53 @@ class TestRunner
       Syslog.debug "Opening up the pipe to #{script_path(name)}"
       
       status = Open4::popen4(script_path(name)) do |pid, stdin, stdout, stderr|
-        stdin.close  # Close to prevent hanging if the script wants input
+        begin
+          stdin.close  # Close to prevent hanging if the script wants input
         
-        until stdout.eof? && stderr.eof? do
-          ready_io_streams = select( [stdout], nil, [stderr], 3600 )
+          until stdout.eof? && stderr.eof? do
+            ready_io_streams = select( [stdout], nil, [stderr], 3600 )
           
-          script_output = ready_io_streams[0].pop
-          script_error = ready_io_streams[2].pop
+            script_output = ready_io_streams[0].pop
+            script_error = ready_io_streams[2].pop
           
-          if script_output && !script_output.eof?
-            o = script_output.readpartial(4096)
-            print o
-            output << o
+            if script_output && !script_output.eof?
+              o = script_output.readpartial(4096)
+              print o
+              output << o
             
-            if options[:stream_test_results?]
-              @results[:test][:output] = output
-              @report_assembler.update_currently_building(self)
+              if options[:stream_test_results?]
+                @results[:test][:output] = output
+                @report_assembler.update_currently_building(self)
+              end
+            end
+          
+            if script_error && !script_error.eof?
+              e = script_error.readpartial(4096)
+              print e
+              error << e
+            
+              if options[:stream_test_results?]
+                @results[:test][:error] = error
+                @report_assembler.update_currently_building(self)
+              end
+            end
+          
+            # FIXME - this feels like I'm using IO.select wrong
+            if script_output.eof? && script_error.nil?
+              # there's no more output to SDOUT, and there aren't any errors
+              e = stderr.read
+              error << e
+              print e
+            
+              if options[:stream_test_results?]
+                @results[:test][:error] = error
+                @report_assembler.update_currently_building(self)
+              end
             end
           end
-          
-          if script_error && !script_error.eof?
-            e = script_error.readpartial(4096)
-            print e
-            error << e
-            
-            if options[:stream_test_results?]
-              @results[:test][:error] = error
-              @report_assembler.update_currently_building(self)
-            end
-          end
-          
-          # FIXME - this feels like I'm using IO.select wrong
-          if script_output.eof? && script_error.nil?
-            # there's no more output to SDOUT, and there aren't any errors
-            e = stderr.read
-            error << e
-            print e
-            
-            if options[:stream_test_results?]
-              @results[:test][:error] = error
-              @report_assembler.update_currently_building(self)
-            end
-          end
+        rescue Lockfile::StolenLockError => e
+          lockfile_stolen(name, pid)
+          raise e
         end
       end
       
@@ -170,5 +175,41 @@ class TestRunner
   
   def still_building?
     !finished?
+  end
+  
+  private
+  
+  def lockfile_stolen(name, pid)
+    catch (:success) do
+      Syslog.info("Lockfile stolen, interrupting #{name} script (PID #{pid}) ...")
+      Process.kill('INT', pid)
+
+      10.times do
+        sleep(1)
+        throw :success unless process_running?(pid)
+      end
+
+      Syslog.info("Forcibly killing #{name} script ...")
+      Process.kill('KILL', pid)
+
+      5.times do
+        sleep(1)
+        throw :success unless process_running?(pid)
+      end
+
+      raise "Script refuses to die."
+    end
+    
+    Syslog.info("Successfully terminated #{name} script.")
+  rescue Exception => e
+    Syslog.err("Error killing #{name} script: #{e.message} (#{e.class})")
+  end
+  
+  def process_running?(pid)
+    Process.waitpid(pid, Process::WNOHANG) # reap zombies
+    Process.kill(0, pid)
+    true
+  rescue Errno::ESRCH
+    false
   end
 end
