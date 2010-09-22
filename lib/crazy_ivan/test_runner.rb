@@ -1,3 +1,5 @@
+require 'cgi'
+
 class TestRunner
   def initialize(project_path, report_assembler)
     @project_path = project_path
@@ -72,7 +74,7 @@ class TestRunner
               output << o
             
               if options[:stream_test_results?]
-                @results[:test][:output] = output
+                @results[:test][:output] = escape(output)
                 @report_assembler.update_currently_building(self)
               end
             end
@@ -83,7 +85,7 @@ class TestRunner
               error << e
             
               if options[:stream_test_results?]
-                @results[:test][:error] = error
+                @results[:test][:error] = escape(error)
                 @report_assembler.update_currently_building(self)
               end
             end
@@ -96,7 +98,7 @@ class TestRunner
               print e
             
               if options[:stream_test_results?]
-                @results[:test][:error] = error
+                @results[:test][:error] = escape(error)
                 @report_assembler.update_currently_building(self)
               end
             end
@@ -110,7 +112,7 @@ class TestRunner
       exit_status = status.exitstatus
     end
     
-    return output.chomp, error.chomp, exit_status.to_s
+    return escape(output.chomp), escape(error.chomp), exit_status.to_s
   end
   
   def run_conclusion_script
@@ -178,6 +180,10 @@ class TestRunner
   end
   
   private
+  
+  def escape(text)
+    CGI.escapeHTML(text)
+  end
   
   def lockfile_stolen(name, pid)
     catch (:success) do
