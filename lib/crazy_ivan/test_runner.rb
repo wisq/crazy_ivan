@@ -51,8 +51,10 @@ class TestRunner
   end
   
   def run_script(name, options = {})
-    output = ''
-    error = ''
+    outputs = {
+      :output => '',
+      :error  => ''
+    }
     exit_status = ''
     
     Dir.chdir(@project_path) do
@@ -62,43 +64,27 @@ class TestRunner
         begin
           stdin.close  # Close to prevent hanging if the script wants input
         
-          until stdout.eof? && stderr.eof? do
-            ready_io_streams = select( [stdout], nil, [stderr], 3600 )
+          select_fds = {
+            stdout => :output,
+            stderr => :error
+          }
+          until select_fds.empty?
+            ready_fds = select(select_fds.keys, nil, nil, 3600).first
           
-            script_output = ready_io_streams[0].pop
-            script_error = ready_io_streams[2].pop
-          
-            if script_output && !script_output.eof?
-              o = script_output.readpartial(4096)
+            ready_fds.each do |fd|
+              if fd.eof?
+                select_fds.delete(fd)
+                next
+              end
+              
+              o = fd.readpartial(4096)
               print o
-              output << o
+
+              key = select_fds[fd]
+              outputs[key] << escape(o)
             
               if options[:stream_test_results?]
-                @results[:test][:output] = escape(output)
-                @report_assembler.update_currently_building(self)
-              end
-            end
-          
-            if script_error && !script_error.eof?
-              e = script_error.readpartial(4096)
-              print e
-              error << e
-            
-              if options[:stream_test_results?]
-                @results[:test][:error] = escape(error)
-                @report_assembler.update_currently_building(self)
-              end
-            end
-          
-            # FIXME - this feels like I'm using IO.select wrong
-            if script_output.eof? && script_error.nil?
-              # there's no more output to SDOUT, and there aren't any errors
-              e = stderr.read
-              error << e
-              print e
-            
-              if options[:stream_test_results?]
-                @results[:test][:error] = escape(error)
+                @results[:test][key] = outputs[key]
                 @report_assembler.update_currently_building(self)
               end
             end
@@ -112,7 +98,7 @@ class TestRunner
       exit_status = status.exitstatus
     end
     
-    return escape(output.chomp), escape(error.chomp), exit_status.to_s
+    return outputs[:output].chomp, outputs[:error].chomp, exit_status.to_s
   end
   
   def run_conclusion_script
