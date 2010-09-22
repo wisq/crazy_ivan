@@ -43,4 +43,17 @@ class ProcessManagerTest < Test::Unit::TestCase
       end
     end
   end
+  
+  def test_lockfile_theft
+    Thread.new do
+      sleep(1)
+      ProcessManager.unlock!
+    end
+
+    ProcessManager.acquire_lock! do 
+      assert_raise Lockfile::StolenLockError do
+        sleep(15) # takes 8 seconds for first check
+      end
+    end
+  end
 end
