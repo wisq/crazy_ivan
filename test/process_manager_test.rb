@@ -5,7 +5,7 @@ class ProcessManagerTest < Test::Unit::TestCase
   def setup
     Syslog.open('crazy_ivan-testing', Syslog::LOG_PID | Syslog::LOG_CONS)
     ProcessManager.lockfilepath = File.expand_path('test-crazy-ivan.lock', Dir.tmpdir)
-    ProcessManager.unlock
+    ProcessManager.unlock!
   end
   
   def teardown
@@ -24,17 +24,22 @@ class ProcessManagerTest < Test::Unit::TestCase
   
   def test_locking
     do_silently do
-      assert_nothing_raised do
-        assert ProcessManager.lock
+      begin
+        pid = fork do
+          ProcessManager.acquire_lock! { sleep(10) }
+        end
+        sleep(0.5)
+      
+        assert_raise AlreadyRunningError do
+          ProcessManager.acquire_lock! {}
+        end
+      ensure
+        Process.kill('TERM', pid)
+        sleep(0.5)
       end
       
-      assert_raise AlreadyRunningError do
-        ProcessManager.lock
-      end
-      
       assert_nothing_raised do
-        ProcessManager.unlock
-        ProcessManager.lock
+        ProcessManager.acquire_lock! {}
       end
     end
   end

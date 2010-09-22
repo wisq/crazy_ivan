@@ -27,4 +27,9 @@ class ProcessManager
     puts msg
     raise AlreadyRunningError, msg
   end
+  
+  def self.unlock!
+    File.unlink(@@lockfile.path)
+  rescue Errno::ENOENT
+  end
 end

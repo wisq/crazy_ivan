@@ -4,7 +4,7 @@ require 'tmpdir'
 class CrazyIvanBinTest < Test::Unit::TestCase
   def setup
     ProcessManager.lockfilepath = File.expand_path('maintest-crazyivan.lock', Dir.tmpdir)
-    ProcessManager.unlock
+    ProcessManager.unlock!
   end
   
   def test_process_exclusivity

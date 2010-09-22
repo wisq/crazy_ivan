@@ -15,7 +15,6 @@ Syslog.open('crazy_ivan', Syslog::LOG_PID | Syslog::LOG_CONS)
 Signal.trap("INT") do
   Syslog.debug("Interrupted - exiting.")
   CrazyIvan.interrupt_test
-  ProcessManager.unlock
   puts
   exit(1)
 end
