@@ -55,7 +55,8 @@ class TestRunner
       :output => '',
       :error  => ''
     }
-    exit_status = ''
+    exit_status  = nil
+    exit_message = ''
     
     Dir.chdir(@project_path) do
       Syslog.debug "Opening up the pipe to #{script_path(name)}"
@@ -95,10 +96,27 @@ class TestRunner
         end
       end
       
-      exit_status = status.exitstatus
+      if status.success?
+        exit_status  = 0
+        exit_message = 'executed successfully'
+      elsif status.exited?
+        exit_status  = status.exitstatus
+        exit_message = "exited with status #{status.exitstatus}"
+      elsif status.signaled?
+        exit_status  = 128 + status.termsig # mimics shell '$?' behaviour
+        exit_message = "died with signal #{status.termsig}"
+      else
+        exit_status  = 255
+        exit_message = 'died of unknown causes'
+      end
     end
     
-    return outputs[:output].chomp, outputs[:error].chomp, exit_status.to_s
+    return {
+      :output => outputs[:output].chomp,
+      :error  => outputs[:error].chomp,
+      :exit_status  => exit_status.to_s,
+      :exit_message => exit_message
+    }
   end
   
   def run_conclusion_script
@@ -131,24 +149,23 @@ class TestRunner
     
   def update!
     Syslog.debug "Updating #{project_name}"
-    @results[:update][:output], @results[:update][:error], @results[:update][:exit_status] = run_script('update')
+    @results[:update] = run_script('update')
   end
   
   def version!
     Syslog.debug "Acquiring build version for #{project_name}"
-    @results[:version][:output], @results[:version][:error], @results[:version][:exit_status] = run_script('version')
+    @results[:version] = run_script('version')
     @results[:version][:output] += '-failed' unless @results[:update][:exit_status] == '0'
   end
   
   def test!
     if @results[:version][:exit_status] == '0'
       Syslog.debug "Testing #{@results[:project_name]} build #{@results[:version][:output]}"
-      output, @results[:test][:error], @results[:test][:exit_status] = run_script('test', :stream_test_results? => true)
+      @results[:test] = result = run_script('test', :stream_test_results? => true)
 
-      if output =~ /E{100,}/
-        output = $` + $& + $'.lines.take(50).join + "\n*** #{$&.length} errors detected, output truncated. ***"
+      if result[:output] =~ /E{100,}/
+        result[:output] = $` + $& + $'.lines.take(50).join + "\n*** #{$&.length} errors detected, output truncated. ***"
       end
-      @results[:test][:output] = output
     else
       Syslog.debug "Failed to test #{project_name}; version exit status was #{@results[:version][:exit_status]}"
     end
