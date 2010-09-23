@@ -1,0 +1,140 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'json'
+require 'cgi'
+
+class Watcher
+  def initialize(path)
+    @path = path
+    @seen = {}
+  end
+
+  def watch
+    old_size = 0
+    File.open("#{@path}/currently_building.json") do |fh|
+      loop do
+        buffer = ''
+        until buffer.length > old_size
+          fh.seek(0)
+          buffer = fh.read
+          return if buffer == "{}\n"
+	  sleep(0.5)
+        end
+
+        data = JSON.load(buffer)
+
+        output_unseen(data, 'update',  'U')
+        output_unseen(data, 'version', 'V')
+        output_unseen(data, 'test',    'T')
+
+        sleep(1)
+      end
+    end
+  end
+
+  private
+
+  OUTPUT_TYPES = [
+    ['output', '.'],
+    ['error',  '!'],
+  ]
+
+  def output_unseen(data, key, prefix)
+    seen = (@seen[key] ||= {})
+    OUTPUT_TYPES.each do |type, type_prefix|
+      seen_type = (seen[type] ||= {})
+      output_unseen_type(data[key][type], seen_type, "#{prefix}#{type_prefix}")
+    end
+  end
+
+  def output_unseen_type(text, seen, prefix)
+    lines = text.lines.to_a
+    seen_lines = seen[:lines] || 0
+
+    partial_line = lines.pop if lines.last !~ /\n$/
+
+    unseen = lines.count - seen_lines
+    if unseen > 0
+      lines.last(unseen).each do |line|
+        output_line(line, prefix)
+      end
+      seen[:lines]   = lines.count
+      seen[:partial] = 0
+    end
+
+    if partial_line
+      seen_partial = seen[:partial] || 0
+      if partial_line.length > seen_partial
+        output_partial_line(partial_line, prefix)
+        seen[:partial] = partial_line.length
+      end
+    end
+  end
+
+  def output_line(line, prefix)
+    flush_partial(prefix)
+
+    puts "#{prefix} #{unescape(abbreviate(line))}"
+    @partial = nil
+  end
+
+  def output_partial_line(line, prefix)
+    flush_partial(prefix)
+
+    print "#{prefix} #{unescape(abbreviate(line))}"
+    $stdout.flush
+    @partial = prefix
+  end
+
+  def flush_partial(prefix)
+    if @partial == prefix
+      print "\r" # same output type, overwrite
+    elsif @partial
+      print "\n" # different, treat partial output as whole line
+    end
+  end
+
+  def unescape(text)
+    CGI.unescapeHTML(text)
+  end
+
+  TEST_STATUSES = [
+    ['.', 'pass',    'passes'],
+    ['F', 'failure', 'failures'],
+    ['E', 'error',   'errors'],
+  ]
+
+  def abbreviate(line)
+    line.sub(/^[\.EF]{5,}/) do
+      by_char = count_characters($&)
+      parts = TEST_STATUSES.inject([]) do |output, (char, singular, plural)|
+        count = by_char[char]
+        if count
+          noun = (count == 1 ? singular : plural)
+          output << "#{count} #{noun}"
+        end
+
+        output
+      end
+
+      line = "[TESTS: #{parts.join(', ')}] "
+    end
+  end
+
+  def count_characters(text)
+    text.chars.inject({}) do |counts, char|
+      counts[char] = (counts[char] || 0) + 1
+      counts
+    end
+  end
+end
+
+begin
+  paths = ARGV
+  paths << '.' if paths.empty?
+  paths.each do |path|
+    Watcher.new(path).watch
+  end
+rescue Interrupt
+end
