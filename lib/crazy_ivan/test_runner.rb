@@ -160,15 +160,17 @@ class TestRunner
   end
   
   def test!
-    if @results[:version][:exit_status] == '0'
+    if @results[:version][:exit_status] != '0'
+      Syslog.debug "Failed to test #{project_name}; version script #{@results[:version][:exit_message]}"
+    elsif @results[:update][:exit_status] != '0'
+      Syslog.debug "Failed to test #{project_name}; update script #{@results[:update][:exit_message]}"
+    else
       Syslog.debug "Testing #{@results[:project_name]} build #{@results[:version][:output]}"
       @results[:test] = result = run_script('test', :stream_test_results? => true)
 
       if result[:output] =~ /E{100,}/
         result[:output] = $` + $& + $'.lines.take(50).join + "\n*** #{$&.length} errors detected, output truncated. ***"
       end
-    else
-      Syslog.debug "Failed to test #{project_name}; version exit status was #{@results[:version][:exit_status]}"
     end
     
     @results[:timestamp][:finish] = Time.now
