@@ -3,12 +3,13 @@ require 'cgi'
 class TestRunner
   def initialize(project_path, report_assembler)
     @project_path = project_path
-    @results = {:project_name => File.basename(@project_path),
-                :version => {:output => '', :error => '', :exit_status => ''},
-                :update  => {:output => '', :error => '', :exit_status => ''},
-                :test    => {:output => '', :error => '', :exit_status => ''},
-                :timestamp => {:start => nil, :finish => nil}}
     @report_assembler = report_assembler
+
+    @results = {
+      :project_name => File.basename(@project_path),
+      :timestamp => {:start => nil, :finish => nil}
+    }
+    [:version, :update, :test].each { |key| @results[key] = default_script_result }
   end
   
   attr_reader :results
@@ -183,6 +184,10 @@ class TestRunner
   end
   
   private
+  
+  def default_script_result
+    {:output => '', :error => '', :exit_status => '', :exit_message => 'not run'}
+  end
   
   def escape(text)
     CGI.escapeHTML(text)
