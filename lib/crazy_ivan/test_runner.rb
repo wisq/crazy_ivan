@@ -156,7 +156,6 @@ class TestRunner
   def version!
     Syslog.debug "Acquiring build version for #{project_name}"
     @results[:version] = run_script('version')
-    @results[:version][:output] += '-failed' unless @results[:update][:exit_status] == '0'
   end
   
   def test!
