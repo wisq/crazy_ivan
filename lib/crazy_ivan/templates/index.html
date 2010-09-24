@@ -69,10 +69,11 @@
       .tests .test.active { font-weight: bold;}
 
       .result .timestamp { margin-right: 12px;}
-      .result .version { margin: 6px 0 6px 12px }
+      .result .summary { margin: 3px 0 }
+      .result .version { margin: 3px 0 3px 12px }
       .result .output { padding: 5px; color: silver; background: black; margin: 12px 18px 8px 18px; overflow: auto }
-      .result .output .update { margin: 6px 0 6px 12px }
-      .result .output .test { margin: 6px 0 6px 12px}
+      .result .output .update { margin: 3px 0 3px 12px }
+      .result .output .test { margin: 3px 0 3px 12px}
 
       .footer { 
         margin: 24px 0 0 0;
@@ -122,20 +123,21 @@
         </div>
         
         <div class="output">
-          <div class="summary">
-            Version <%= version.exit_message %>.<br/>
-            Update  <%= update.exit_message %>.
-            <a href="#" onclick="$(this).parent().parent().children(<%= "'.update'" %>).show(); $(this).hide(); return false;">Show output</a><br/>
-            Test    <%= test.exit_message %>.
-          </div>
-
+          <div class="summary">Version <%= version.exit_message %>.</div>
           <div class="version"><pre class="error"><%= version.error %></pre></div>
-          
+
+          <div class="summary">
+            Update <%= update.exit_message %>.
+            <a href="#" onclick="$(this).parent().parent().children(<%= "'.update'" %>).show(); $(this).hide(); return false;">Show output</a><br/>
+          </div>
           <div class="update" style="display: none">
             <pre><%= update.output %></pre>
             <pre class="error"><%= update.error %></pre>
           </div>
           
+          <div class="summary">
+            Test <%= test.exit_message %>.
+          </div>
           <div class="test">
             <pre><%= test.output.replace(/\</g, "&lt;").replace(/\>/g, "&gt;") %></pre>
             <pre class="error"><%= test.error %></pre>
