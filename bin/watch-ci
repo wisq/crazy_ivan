@@ -19,7 +19,7 @@ class Watcher
           fh.seek(0)
           buffer = fh.read
           return if buffer == "{}\n"
-	  sleep(0.5)
+          sleep(0.5)
         end
 
         data = JSON.load(buffer)
