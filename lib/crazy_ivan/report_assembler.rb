@@ -19,6 +19,8 @@ class ReportAssembler
         end
       end
     end
+
+    @runners = runners.sort_by { |r| r.sort_order }
     
     Dir.chdir(@output_directory) do
       # Write out the index.html file

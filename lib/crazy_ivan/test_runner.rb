@@ -18,6 +18,10 @@ class TestRunner
     @results[:project_name]
   end
 
+  def sort_order
+    [sort_file_contents, @results[:project_name]]    
+  end
+
   def check_for_valid_scripts
     check_script('update')
     check_script('version')
@@ -185,6 +189,15 @@ class TestRunner
   end
   
   private
+  
+  def sort_file_contents
+    sort_file = File.join(@project_path, '.ci', 'sort_order')
+    if File.exists?(sort_file)
+      File.read(sort_file, 10)
+    else
+      "\xff" * 10 # comes last
+    end
+  end
   
   def default_script_result
     {:output => '', :error => '', :exit_status => '', :exit_message => 'not run'}
