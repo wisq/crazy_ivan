@@ -62,7 +62,7 @@
 
       .project h2 { margin: 12px 0 0 0;}
 
-      .tests { margin: 0 0 0 18px;}
+      .tests { margin: 0 0 0 18px; height: 40px }
       .tests .test { margin-right: 8px}
       .tests a.test:hover { text-decoration: underline;}
       .tests .test.first { font-size: 100%;}
@@ -98,7 +98,7 @@
       <div id="<%= projectId %>" class="project">
         <h2><%= projectName %></h2>
         
-        <div class="tests"></div>
+        <div class="tests">Loading &hellip;</div>
         <div style="clear: left"></div>
         <div class="results"></div>
       <div>
@@ -153,6 +153,8 @@
       jQuery(document).ready(function($) {
         $.getJSON("projects.json", function(data) {
           projectNames = data.projects;
+          trigger_render();
+
           jQuery.each(data.projects, function(i, projectName) {
             addProjectToJson(projectName);
           });
@@ -180,11 +182,17 @@
         
         // order the projects by what the projects.json returns
         for(var name in projectNames) {
+          var found = false;
           for(var project in projects) {
             if(projects[project].name == projectNames[name]) {
               orderedProjects.push(projects[project]);
+              found = true;
               break;
             }
+          }
+
+          if (!found) {
+            orderedProjects.push({'name': projectNames[name], reports: []});
           }
         }
         return orderedProjects;
@@ -208,6 +216,10 @@
 
             return right.compareTo(left);
           });
+
+          if (project.reports.length > 0) {
+            $("#" + domId + " .tests").empty();
+          }
 
           jQuery.each(project.reports, function(i, report) {
             var version = report.version.output;
