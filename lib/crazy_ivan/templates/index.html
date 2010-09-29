@@ -149,6 +149,7 @@
     <script type="text/javascript" charset="utf-8">
       var json = {projects: []};
       var projectNames;
+      var showResult = window.location.hash;
       
       jQuery(document).ready(function($) {
         $.getJSON("projects.json", function(data) {
@@ -253,19 +254,27 @@
             }
           });
         });
+
+        var show = $(showResult)[0];
+        if (show != null) {
+          select_result(show);
+        }
       }
       
       // listen to clicking of test result links
-      $('#projects .project .tests a.test').live('click', function(e) {
+      var select_result = function(elem) {
         $('.result:visible').hide();
 
-        if($(e.target).hasClass('active')) {
+        if($(elem).hasClass('active')) {
           $('.test').removeClass('active');
         } else {
           $('.test').removeClass('active');
-          $('.result.' + e.target.id).show(); 
-          $(e.target).addClass('active');
+          $('.result.' + elem.id).show(); 
+          $(elem).addClass('active');
         }
+      }
+      $('#projects .project .tests a.test').live('click', function (e) {
+        select_result(e.target);
       });
   </script>
   </body>
