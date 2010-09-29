@@ -14,7 +14,7 @@ class ReportAssembler
   def generate
     Dir.chdir(@projects_directory) do
       Dir['*'].each do |dir|
-        if File.directory?(dir)
+        if File.directory?("#{dir}/.ci")
           runners << TestRunner.new(File.join(@projects_directory, dir), self)
         end
       end
