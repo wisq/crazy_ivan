@@ -98,7 +98,7 @@ name = report['project_name']
 version = report['version']['output']
 exit_status = report['test']['exit_status']
 
-url = [ARGV[2], '#', name, '-', version].join
+url = [ARGV[2], '#', name.gsub('.', ''), '-', version].join
 
 if exit_status == "0" || exit_status.nil?
   campfire_room.message "PASS: #{name} built happily: #{url}"
