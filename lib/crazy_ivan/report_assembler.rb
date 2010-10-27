@@ -57,6 +57,8 @@ class ReportAssembler
         flush_build_progress(runner)
       end
     end
+  ensure
+    status 'Idle', :class => 'idle'
   end
   
   def update_index
@@ -141,6 +143,16 @@ class ReportAssembler
     Dir.chdir(project_results_path) do
       File.open("currently_building.json", 'w+') do |f|
         f.puts({}.to_json)
+      end
+    end
+  end
+  
+  def status(message, options = {})
+    data = options.merge(:message => message)
+
+    Dir.chdir(@output_directory) do
+      File.open('status.json', 'w+') do |f|
+        f.puts(data.to_json)
       end
     end
   end

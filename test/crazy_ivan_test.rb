@@ -129,6 +129,24 @@ class CrazyIvanTest < Test::Unit::TestCase
     FileUtils.copy('test/projects/completely-working/.ci/version_original', 'test/projects/completely-working/.ci/version')
   end
   
+  def test_status_file
+    # Enable status copying in the update and test scripts.
+    ENV['COPY_STATUS'] = Dir.getwd + '/test/ci-results/status.json'
+
+    setup_crazy_ivan
+    run_crazy_ivan do
+      status = JSON.parse(File.read('test/ci-results/status.json.update'))
+      assert_equal 'Updating completely-working', status['message']
+
+      status = JSON.parse(File.read('test/ci-results/status.json.test'))
+      assert_equal 'Testing completely-working build a-valid-version', status['message']
+
+      status = JSON.parse(File.read('test/ci-results/status.json'))
+      assert_equal 'Idle', status['message']
+      assert_equal 'idle', status['class']
+    end
+  end
+  
   private
   
   def setup_crazy_ivan()

@@ -7,6 +7,11 @@
 
 # git pull
 
+if status = ENV['COPY_STATUS']
+  require 'fileutils'
+  FileUtils.cp(status, status + '.update')
+end
+
 STDOUT.puts "a-valid-update"
 STDERR.puts ""
 

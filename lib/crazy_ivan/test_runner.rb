@@ -153,12 +153,12 @@ class TestRunner
   end
     
   def update!
-    Syslog.debug "Updating #{project_name}"
+    status "Updating #{project_name}"
     @results[:update] = run_script('update')
   end
   
   def version!
-    Syslog.debug "Acquiring build version for #{project_name}"
+    status "Acquiring build version for #{project_name}"
     @results[:version] = run_script('version')
   end
   
@@ -168,7 +168,7 @@ class TestRunner
     elsif @results[:update][:exit_status] != '0'
       Syslog.debug "Failed to test #{project_name}; update script #{@results[:update][:exit_message]}"
     else
-      Syslog.debug "Testing #{@results[:project_name]} build #{@results[:version][:output]}"
+      status "Testing #{@results[:project_name]} build #{@results[:version][:output]}"
       @results[:test] = result = run_script('test', :stream_test_results? => true)
 
       if result[:output] =~ /E{100,}/
@@ -239,5 +239,10 @@ class TestRunner
     true
   rescue Errno::ESRCH
     false
+  end
+  
+  def status(message)
+    @report_assembler.status(message)
+    Syslog.debug(message)
   end
 end

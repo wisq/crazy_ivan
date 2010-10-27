@@ -5,6 +5,11 @@
 
 # rake
 
+if status = ENV['COPY_STATUS']
+  require 'fileutils'
+  FileUtils.cp(status, status + '.test')
+end
+
 STDOUT.puts "Some valid test results. No fails."
 STDERR.puts ""
 
