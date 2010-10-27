@@ -81,10 +81,19 @@
         width: 100%;
         text-align: center;
       }
+
+      #status { 
+        font-size: smaller;
+        color: #777;
+      }
+      #status.idle { color: #999 }
     </style>
   </head>
   <body>
     <h1>Projects</h1>
+
+    <p id="status">&hellip;</p>
+
     <div id="projects"></div>
     
     <div class="footer">
@@ -152,6 +161,11 @@
       var showResult = window.location.hash;
       
       jQuery(document).ready(function($) {
+        $.getJSON("status.json?" + new Date().getTime(), function(data) {
+          $('#status').text(data.message);
+          $('#status').removeClass().addClass(data.class);
+        });
+
         $.getJSON("projects.json", function(data) {
           projectNames = data.projects;
           trigger_render();
