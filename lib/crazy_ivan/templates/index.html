@@ -64,6 +64,11 @@
 
       .tests { margin: 0 0 0 18px; height: 40px }
       .tests .test { margin-right: 8px}
+      .tests a.test {
+	      color: inherit;
+        text-decoration: none;
+      }
+      .tests a.test.error { color: red; }
       .tests a.test:hover { text-decoration: underline;}
       .tests .test.first { font-size: 100%;}
       .tests .test.active { font-weight: bold;}
@@ -118,7 +123,7 @@
       <div style="float: left; margin-right: 8px">
         <div style="float:left; height: 1.2em; font-size: 84%"><%= longTimeStamp %></div>
         <div style="clear: left">
-          <a id="<%= projectDomId %>-<%= version.output %>" class="test"><%= shortTimeStamp %></a>
+          <a href="#" id="<%= projectDomId %>-<%= version.output %>" class="test"><%= shortTimeStamp %></a>
         </div>
       </div>
     </script>
@@ -288,6 +293,7 @@
         }
       }
       $('#projects .project .tests a.test').live('click', function (e) {
+	      e.preventDefault();
         select_result(e.target);
       });
   </script>
