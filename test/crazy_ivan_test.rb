@@ -2,6 +2,10 @@ require 'test_helper'
 require 'tmpdir'
 
 class CrazyIvanTest < Test::Unit::TestCase
+  def setup
+    Dir.chdir(File.dirname(__FILE__) + '/..')
+  end
+
   def teardown
     `rm -rf test/ci-results`
   end
