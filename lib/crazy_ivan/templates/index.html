@@ -168,7 +168,7 @@
       jQuery(document).ready(function($) {
         $.getJSON("status.json?" + new Date().getTime(), function(data) {
           $('#status').text(data.message);
-          $('#status').removeClass().addClass(data.class);
+          $('#status').removeClass().addClass(data['class']);
         });
 
         $.getJSON("projects.json", function(data) {
