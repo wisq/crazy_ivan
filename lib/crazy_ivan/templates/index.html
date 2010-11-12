@@ -301,9 +301,11 @@
           });
         });
 
-        var show = $(showResult)[0];
-        if (show != null) {
-          select_result(show);
+        if (showResult != '') {
+          var show = $('#' + showResult)[0];
+          if (show != null) {
+            select_result(show);
+          }
         }
       }
       
@@ -313,10 +315,12 @@
 
         if($(elem).hasClass('active')) {
           $('.test').removeClass('active');
+          showResult = '';
         } else {
           $('.test').removeClass('active');
           $('.result.' + elem.id).show(); 
           $(elem).addClass('active');
+          showResult = elem.id;
         }
       }
       $('#projects .project .tests a.test').live('click', function (e) {
