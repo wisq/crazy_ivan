@@ -148,7 +148,10 @@ class ReportAssembler
   end
   
   def status(message, options = {})
-    data = options.merge(:message => message)
+    data = options.merge(
+      :message => message,
+      :timestamp => Time.now.to_f
+    )
 
     Dir.chdir(@output_directory) do
       File.open('status.json', 'w+') do |f|
