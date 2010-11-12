@@ -65,6 +65,7 @@ class ReportAssembler
     FileUtils.cp(File.expand_path("index.html", TEMPLATES_PATH), 'index.html')
     FileUtils.mkdir_p('javascript')
     FileUtils.cp(File.expand_path("date.js", File.join(TEMPLATES_PATH, 'javascript')), 'javascript/date.js')
+    FileUtils.cp(File.expand_path("jquery.cookie.js", File.join(TEMPLATES_PATH, 'javascript')), 'javascript/jquery.cookie.js')
   end
     
   def update_projects

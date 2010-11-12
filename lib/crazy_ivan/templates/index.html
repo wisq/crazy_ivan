@@ -6,6 +6,7 @@
     
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.1/jquery.min.js"></script>
     <script type="text/javascript" charset="utf-8" src="javascript/date.js"></script>
+    <script type="text/javascript" charset="utf-8" src="javascript/jquery.cookie.js"></script>
     <script type="text/javascript">
       // Simple JavaScript Templating
       // John Resig - http://ejohn.org/ - MIT Licensed
@@ -164,29 +165,55 @@
       var json = {projects: []};
       var projectNames;
       var showResult = window.location.hash;
+      var lastTimestamp = $.cookie('timestamp') || makeTimestamp();
+      var oldStatus = null;
       
       jQuery(document).ready(function($) {
-        $.getJSON("status.json?" + new Date().getTime(), function(data) {
+        loadStatus();
+        loadProjects(lastTimestamp); // for quick display
+        setTimeout('loadProjects(makeTimestamp());', 5000); // for up-to-date info
+        setTimeout('reloadStatus()', 15000);
+      });
+      
+      function makeTimestamp() {
+        return new Date().getTime();
+      }
+
+      function reloadStatus() {
+        loadStatus();
+        setTimeout('reloadStatus()', 15000);        
+      }
+      
+      function loadStatus() {
+        $.getJSON("status.json?" + makeTimestamp(), function(data) {
           $('#status').text(data.message);
           $('#status').removeClass().addClass(data['class']);
+          
+          newStatus = data.message;
+          if (oldStatus != null && newStatus != oldStatus) {
+            loadProjects(makeTimestamp());
+          }
+          oldStatus = newStatus;
         });
+      }
 
-        $.getJSON("projects.json", function(data) {
+      function loadProjects(timestamp) {
+        $.getJSON("projects.json?" + timestamp, function(data) {
           projectNames = data.projects;
           trigger_render();
 
           jQuery.each(data.projects, function(i, projectName) {
-            addProjectToJson(projectName);
+            addProjectToJson(projectName, timestamp);
           });
+          $.cookie('timestamp', timestamp);
         });
-      });
-      
-      function addProjectToJson(name) {
-        var projectJsonPath = name + "/reports.json?"
-          + Math.floor(new Date().getTime() / 300000); // refresh every 5 mins
+      }
+
+      function addProjectToJson(name, timestamp) {
+        var projectJsonPath = name + "/reports.json?" + timestamp;
         
         jQuery.getJSON(projectJsonPath, function(data) {
-          json.projects.push({'name': name, reports: data});
+          json.projects[name] = {'name': name, reports: data};
           trigger_render();
         });
       }
