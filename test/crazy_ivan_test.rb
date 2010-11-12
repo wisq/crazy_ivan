@@ -82,6 +82,7 @@ class CrazyIvanTest < Test::Unit::TestCase
       assert test_results["test"]["output"]
       assert test_results["test"]["error"]
       assert test_results["test"]["exit_status"] == '1'
+      assert test_results["test"]["duration"] # FIXME use a number here
     end
   end
   
@@ -141,15 +142,21 @@ class CrazyIvanTest < Test::Unit::TestCase
     run_crazy_ivan do
       status = JSON.parse(File.read('test/ci-results/status.json.update'))
       assert_equal 'Updating completely-working', status['message']
+      assert_equal 'completely-working', status['project']
+      assert_equal 'update', status['stage']
       assert_in_delta Time.now.to_f, status['timestamp'], 2.0
 
       status = JSON.parse(File.read('test/ci-results/status.json.test'))
       assert_equal 'Testing completely-working build a-valid-version', status['message']
+      assert_equal 'completely-working', status['project']
+      assert_equal 'test', status['stage']
       assert_in_delta Time.now.to_f, status['timestamp'], 2.0
 
       status = JSON.parse(File.read('test/ci-results/status.json'))
       assert_equal 'Idle', status['message']
       assert_equal 'idle', status['class']
+      assert_nil status['project']
+      assert_nil status['stage']
       assert_in_delta Time.now.to_f, status['timestamp'], 2.0
     end
   end

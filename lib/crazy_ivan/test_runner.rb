@@ -62,6 +62,7 @@ class TestRunner
     }
     exit_status  = nil
     exit_message = ''
+    start_time = Time.now
     
     Dir.chdir(@project_path) do
       Syslog.debug "Opening up the pipe to #{script_path(name)}"
@@ -120,7 +121,8 @@ class TestRunner
       :output => outputs[:output].chomp,
       :error  => outputs[:error].chomp,
       :exit_status  => exit_status.to_s,
-      :exit_message => exit_message
+      :exit_message => exit_message,
+      :duration => Time.now - start_time
     }
   end
   
@@ -153,12 +155,12 @@ class TestRunner
   end
     
   def update!
-    status "Updating #{project_name}"
+    status :update, "Updating #{project_name}"
     @results[:update] = run_script('update')
   end
   
   def version!
-    status "Acquiring build version for #{project_name}"
+    status :version, "Acquiring build version for #{project_name}"
     @results[:version] = run_script('version')
   end
   
@@ -168,7 +170,7 @@ class TestRunner
     elsif @results[:update][:exit_status] != '0'
       Syslog.debug "Failed to test #{project_name}; update script #{@results[:update][:exit_message]}"
     else
-      status "Testing #{@results[:project_name]} build #{@results[:version][:output]}"
+      status :test, "Testing #{@results[:project_name]} build #{@results[:version][:output]}"
       @results[:test] = result = run_script('test', :stream_test_results? => true)
 
       if result[:output] =~ /E{100,}/
@@ -241,8 +243,11 @@ class TestRunner
     false
   end
   
-  def status(message)
-    @report_assembler.status(message)
+  def status(stage, message)
+    @report_assembler.status(message,
+      :project => @results[:project_name],
+      :stage   => stage.to_s
+    )
     Syslog.debug(message)
   end
 end
