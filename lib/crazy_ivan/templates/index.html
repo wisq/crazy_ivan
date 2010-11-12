@@ -189,7 +189,7 @@
           $('#status').text(data.message);
           $('#status').removeClass().addClass(data['class']);
           
-          newStatus = data.message;
+          newStatus = data.timestamp;
           if (oldStatus != null && newStatus != oldStatus) {
             loadProjects(makeTimestamp());
           }
