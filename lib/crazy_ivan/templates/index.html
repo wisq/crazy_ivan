@@ -196,6 +196,14 @@
       function makeTimestamp() {
         return new Date().getTime();
       }
+      
+      function parseUTC(string) {
+        date = Date.parse(string);
+        return new Date(Date.UTC(
+          date.getYear() + 1900, date.getMonth(), date.getDate(),
+          date.getHours(), date.getMinutes(), date.getSeconds()
+        ));
+      }
 
       function reloadStatus() {
         loadStatus();
@@ -300,12 +308,12 @@
             var domId = name.replace(/\./g, "");      // remove . from id name
             
             var timestamp = report.timestamp.finish;
-            report["longTimeStamp"] = Date.parse(timestamp.substring(4)).toString("MMM d");
+            report["longTimeStamp"] = parseUTC(timestamp.substring(4)).toString("MMM d");
             
             // To group the long time stamps (e.g. Feb 8)
             if(project.reports[i - 1] != undefined) {
               next_timestamp = project.reports[i - 1].timestamp.finish;
-              next_longTimeStamp = Date.parse(next_timestamp.substring(4)).toString("MMM d");
+              next_longTimeStamp = parseUTC(next_timestamp.substring(4)).toString("MMM d");
               
               if(report["longTimeStamp"] == next_longTimeStamp) {
                 report["longTimeStamp"] = "";
@@ -313,7 +321,7 @@
             }
             
             // Not sure why providing a 3-letter day trips up Date.js sometimes
-            report["shortTimeStamp"] = Date.parse(timestamp.substring(4)).toString("HH:mm");
+            report["shortTimeStamp"] = parseUTC(timestamp.substring(4)).toString("HH:mm");
             report["projectDomId"] = domId;
             
             $("#" + domId + " .results").append(tmpl("resultTemplate", report));
