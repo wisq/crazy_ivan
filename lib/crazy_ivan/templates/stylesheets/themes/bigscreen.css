@@ -1,9 +1,10 @@
 .project {
   float: left;
-  width: 45%;
+  width: 49%;
 }
 .break {
   clear: both;
+  height: 10px;
 }
 
 .project.selected {
@@ -14,6 +15,7 @@
 body {
   background-color: black;
   color: #ddd;
+  font-size: 130%;
 }
 .status {
   color: #999;
