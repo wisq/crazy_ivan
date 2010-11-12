@@ -1,0 +1,20 @@
+.project {
+  float: left;
+  width: 45%;
+}
+.break {
+  clear: both;
+}
+
+.project.selected {
+  width: 100%;
+  clear: both;
+}
+
+body {
+  background-color: black;
+  color: #ddd;
+}
+.status {
+  color: #999;
+}

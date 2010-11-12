@@ -5,6 +5,7 @@
     <title>Crazy Ivan: CI straight up.</title>
     
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.1/jquery.min.js"></script>
+    <script type="text/javascript" src="javascript/jquery.query-2.1.7.js"></script>
     <script type="text/javascript" charset="utf-8" src="javascript/date.js"></script>
     <script type="text/javascript" charset="utf-8" src="javascript/jquery.cookie.js"></script>
     <script type="text/javascript">
@@ -119,6 +120,10 @@
       <div>
     </script>
     
+    <script type="text/html" id="projectDivider">
+      <div class="break"></div>
+    </script>
+    
     <!-- test link template -->
     <script type="text/html" id="resultLinkTemplate">
       <div style="float: left; margin-right: 8px">
@@ -169,11 +174,24 @@
       var oldStatus = null;
       
       jQuery(document).ready(function($) {
+        theme = $.query.get('theme');
+        if (theme != '') { loadTheme(theme); }
+
         loadStatus();
         loadProjects(lastTimestamp); // for quick display
         setTimeout('loadProjects(makeTimestamp());', 5000); // for up-to-date info
         setTimeout('reloadStatus()', 15000);
       });
+      
+      function loadTheme(name) {
+        $("head").append("<link>");
+        css = $("head").children(":last");
+        css.attr({
+          rel:  "stylesheet",
+          type: "text/css",
+          href: "stylesheets/themes/" + name + ".css"
+        });
+      }
       
       function makeTimestamp() {
         return new Date().getTime();
@@ -245,6 +263,10 @@
         return orderedProjects;
       }
       
+      function projectBase(name) {
+        return name.split('-', 2)[0];
+      }
+            
       var render = function() {
         $('#projects').empty();
         
@@ -253,6 +275,10 @@
         jQuery.each(sortedProjects, function(i, project) {
           var name = project.name;
           var domId = name.replace(/\./g, "");      // remove . from id name
+
+          if (i > 0 && projectBase(sortedProjects[i-1].name) != projectBase(name)) {
+            $('#projects').append(tmpl("projectDivider", {}));
+          }
           
           // create project holder div
           $('#projects').append(tmpl("projectTemplate", {projectName: name, projectId: domId}));
@@ -301,6 +327,8 @@
           });
         });
 
+        $('#projects').append(tmpl("projectDivider", {}));
+
         if (showResult != '') {
           var show = $('#' + showResult)[0];
           if (show != null) {
@@ -313,13 +341,16 @@
       var select_result = function(elem) {
         $('.result:visible').hide();
 
-        if($(elem).hasClass('active')) {
-          $('.test').removeClass('active');
+        var active = $(elem).hasClass('active');
+        $('.test').removeClass('active');
+        $('.project').removeClass('selected');
+
+        if (active) {
           showResult = '';
         } else {
-          $('.test').removeClass('active');
           $('.result.' + elem.id).show(); 
           $(elem).addClass('active');
+          $(elem).closest('.project').addClass('selected');
           showResult = elem.id;
         }
       }
