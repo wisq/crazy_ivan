@@ -141,16 +141,16 @@ class CrazyIvanTest < Test::Unit::TestCase
     run_crazy_ivan do
       status = JSON.parse(File.read('test/ci-results/status.json.update'))
       assert_equal 'Updating completely-working', status['message']
-      assert_in_delta Time.now.to_f, status['timestamp'], 0.5
+      assert_in_delta Time.now.to_f, status['timestamp'], 2.0
 
       status = JSON.parse(File.read('test/ci-results/status.json.test'))
       assert_equal 'Testing completely-working build a-valid-version', status['message']
-      assert_in_delta Time.now.to_f, status['timestamp'], 0.5
+      assert_in_delta Time.now.to_f, status['timestamp'], 2.0
 
       status = JSON.parse(File.read('test/ci-results/status.json'))
       assert_equal 'Idle', status['message']
       assert_equal 'idle', status['class']
-      assert_in_delta Time.now.to_f, status['timestamp'], 0.5
+      assert_in_delta Time.now.to_f, status['timestamp'], 2.0
     end
   end
   
