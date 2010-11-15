@@ -20,3 +20,16 @@ body {
 .status {
   color: #999;
 }
+
+.project.first_error h2 {
+  color: red;
+}
+.project.all_errors h2 {
+  color: inherit;
+}
+.project.test_stage h2 {
+  color: #ccf;
+}
+.project.first_error.test_stage h2 {
+  color: orange;
+}

@@ -171,7 +171,7 @@
       var projectNames;
       var showResult = window.location.hash;
       var lastTimestamp = $.cookie('timestamp') || makeTimestamp();
-      var oldStatus = null;
+      var currentStatus = null;
       
       jQuery(document).ready(function($) {
         theme = $.query.get('theme');
@@ -214,13 +214,29 @@
         $.getJSON("status.json?" + makeTimestamp(), function(data) {
           $('#status').text(data.message);
           $('#status').removeClass().addClass(data['class']);
+
+          oldStatus = currentStatus;
+          currentStatus = data;
           
-          newStatus = data.timestamp;
-          if (oldStatus != null && newStatus != oldStatus) {
+          if (oldStatus != null && data['timestamp'] != oldStatus['timestamp']) {
             loadProjects(makeTimestamp());
           }
-          oldStatus = newStatus;
+
+          updateStatusClass();
         });
+      }
+          
+      function updateStatusClass() {
+        if (currentStatus == null) { return; }
+
+        var project = currentStatus['project'];
+        var stage   = currentStatus['stage'];
+
+        $('.project').removeClass('update_stage version_stage test_stage');
+        if (project && stage) {
+          var domId = project.replace(/\./g, ""); // remove . from id name
+          $('#' + domId).addClass(stage + '_stage');
+        }
       }
 
       function loadProjects(timestamp) {
@@ -302,6 +318,9 @@
             $("#" + domId + " .tests").empty();
           }
 
+          var all_errors = true;
+          var first_error = false;
+          
           jQuery.each(project.reports, function(i, report) {
             var version = report.version.output;
             var resultJsonPath = name + "/" + version + ".json";
@@ -331,8 +350,14 @@
             if ((report.test.exit_status   && report.test.exit_status   != '0') ||
                 (report.update.exit_status && report.update.exit_status != '0')) {
               $("#" + domId + '-' + version).addClass('error');
+              if (i == 0) { first_error = true; }
+            } else {
+              all_errors = false;
             }
           });
+          
+          if (all_errors ) { $('#' + domId).addClass('all_errors' ); }
+          if (first_error) { $('#' + domId).addClass('first_error'); }
         });
 
         $('#projects').append(tmpl("projectDivider", {}));
@@ -343,6 +368,8 @@
             select_result(show);
           }
         }
+
+        updateStatusClass();
       }
       
       // listen to clicking of test result links
