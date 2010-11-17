@@ -169,7 +169,7 @@
     <script type="text/javascript" charset="utf-8">
       var json = {projects: []};
       var projectNames;
-      var showResult = window.location.hash;
+      var showResult = window.location.hash.substring(1);
       var lastTimestamp = $.cookie('timestamp') || makeTimestamp();
       var currentStatus = null;
       
