@@ -1,0 +1,99 @@
+#!/usr/bin/env ruby
+
+# This code is designed to run a generic outbound-only Jabber bot.
+# The test_blame2jabber script can be used to connect to this
+# and send messages to individual users when CI builds fail.
+#
+# The xmpp4r-simple gem is required.
+#
+# Usage: jabber-bot <config.yml>
+#
+# Example config.yml file:
+#
+# :jabber_id: my.bot@gmail.com
+# :password:  my.bot.password
+# :druby_uri: druby://localhost:5223
+
+require 'drb'
+require 'thwait'
+require 'yaml'
+
+require 'rubygems'
+require 'xmpp4r-simple'
+
+$stdout.sync = true # logging
+
+class JabberBot
+  def self.launch_config(file)
+    config = YAML.load_file(file)
+    launch(config[:jabber_id], config[:password], config[:druby_uri])
+  end
+
+  def self.launch(jabber_id, password, druby_uri)
+    puts "JabberBot is starting."
+
+    Thread.abort_on_exception = true
+    client = Client.new(jabber_id, password)
+    server = Server.new(client, druby_uri)
+
+    puts "JabberBot is ready."
+
+    threads = {
+      client.thread => 'Client',
+      server.thread => 'Server'
+    }
+
+    died = ThreadsWait.new(*threads.keys).next_wait
+    puts "#{threads[died]} has terminated, exiting."
+
+    threads.keys.map(&:exit)
+    ThreadsWait.all_wait(*threads.keys)
+  end
+end
+
+class JabberBot::Client
+  attr_reader :thread
+
+  def initialize(jabber_id, password)
+    @jabber = Jabber::Simple.new(jabber_id, password)
+    @jabber.status(nil, '')
+    @jabber.accept_subscriptions = true
+    @thread = Thread.new { receive_thread }
+  end
+
+  def receive_thread
+    recv_method = method(:message_received)
+    while @jabber.connected?
+      @jabber.received_messages(&recv_method)
+      sleep(60)
+    end
+  end
+
+  def deliver(email, message)
+    result = @jabber.deliver(email, message)
+    puts "Sent message to #{email}: #{message.inspect}"
+
+    result.class != Queue # true = sent, false = queued
+  end
+
+  def message_received(msg)
+    puts "Received message from #{msg.from}: #{msg.body.inspect}"
+  end
+end
+
+class JabberBot::Server
+  def initialize(client, uri)
+    @client = client
+    DRb.start_service(uri, self)
+  end
+
+  def thread
+    DRb.thread
+  end
+
+  def deliver(email, message)
+    @client.deliver(email, message)
+  end
+end
+
+JabberBot.launch_config(*ARGV)

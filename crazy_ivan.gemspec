@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
 
     CI depends on cron.}
   s.email = %q{edward@edwardog.net}
-  s.executables = ["crazy_ivan", "test_report2campfire"]
+  s.executables = ["crazy_ivan", "ci_jabber_bot", "test_report2campfire", "test_blame2jabber"]
   s.extra_rdoc_files = [
     "LICENSE",
      "README.rdoc",
