@@ -39,7 +39,7 @@ class CrazyIvanTest < Test::Unit::TestCase
     run_crazy_ivan {}
     run_crazy_ivan do
       TestRunner.any_instance.expects(:test!).times(0)
-      TestRunner.any_instance.expects(:run_conclusion_script).times(0)
+      TestRunner.any_instance.expects(:conclusion!).times(0)
       
       broken_test_results = JSON.parse(File.read('test/ci-results/broken-tests/reports.json'))
       broken_versions = broken_test_results.map {|r| r['version']['output'] }

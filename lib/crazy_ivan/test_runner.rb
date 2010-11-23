@@ -126,7 +126,7 @@ class TestRunner
     }
   end
   
-  def run_conclusion_script
+  def conclusion!
     # REFACTOR do this asynchronously so the next tests don't wait on running the conclusion
     
     Dir.chdir(@project_path) do
@@ -179,7 +179,6 @@ class TestRunner
     end
     
     @results[:timestamp][:finish] = Time.now
-    run_conclusion_script
   end
   
   def finished?

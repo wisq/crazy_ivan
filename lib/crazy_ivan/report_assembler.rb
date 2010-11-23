@@ -53,6 +53,7 @@ class ReportAssembler
           # update_project will be called from within the runner to stream the test output
           runner.test!
           update_project(runner)
+          runner.conclusion!
         end
         flush_build_progress(runner)
       end
