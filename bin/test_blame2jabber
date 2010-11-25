@@ -9,19 +9,42 @@
 #   * the script is being run in an up-to-date git repository that matches the report
 #
 # Usage:
-#   test_blame2jabber <jabber-bot URI> <report file> <CI URL>
+#   test_blame2jabber <config.yml> <jabber-bot URI> <report file> <CI URL>
 #     e.g.
-#   test_blame2jabber druby://127.0.0.1:5233 /some/directory/reports.json http://ci.mydomain.com/
+#   test_blame2jabber config.yml druby://127.0.0.1:5233 /some/directory/reports.json http://ci.mydomain.com/
 #
 # Note that this script requires the ENTIRE reports.json file, not just the
 # most recent report.  It does not accept the report on standard input like the
 # conclusion script, but it can be run from there.
 #
-# TODO: Add a configuration that specifies (among other things) domain whitelists
-# for messaging and aliases for users who use multiple names or email addresses.
+# The config.yml file contains the following (all optional):
+#
+# ---
+# whitelist:
+#   - good.domain
+#   - other.domain
+# aliases:
+#   bad.domain: good.domain
+#   other.bad.domain: good.domain
+# authors:
+#   John Smith: jsmith@good.domain
+#   Author Guy: aguy@other.domain
+#
+# The whitelist limits what domains to allow Jabber messages to.
+# (No whitelist means no limit.)
+#
+# The aliases map domains to other domains.  For example, if
+# user@bad.domain is a valid email and is used in your git commit
+# messages, but only user@good.domain accepts Jabber messages, you
+# would use the first alias above.  Make sure the alias target is
+# listed in the whitelist!
+#
+# The authors map names to email addresses.  It doesn't need to be
+# comprehensive, but if you're having trouble because someone uses a
+# domain that isn't whitelisted or aliased, this can be used to get
+# messages to them.  Make sure the domains are whitelisted or aliased.
 
 require 'drb'
-require 'set'
 
 require 'rubygems'
 require 'json'
@@ -46,6 +69,28 @@ class Array
 end
 
 class Blamer
+  class Config
+    def initialize(file)
+      data = YAML.load_file(file)
+      @whitelist = data['whitelist'] || []
+      @aliases   = data['aliases']   || {}
+
+      preload_authors(data['authors'] || {})
+    end
+
+    def jabber_domain_for(domain)
+      new_domain = @aliases[domain] || domain
+      return nil unless @whitelist.empty? || @whitelist.include?(new_domain)
+      new_domain
+    end
+    
+    def preload_authors(authors)
+      authors.each do |name, email|
+        CommitAuthor.find_or_create("#{name} <#{email}>")
+      end
+    end
+  end
+
   class Report
     attr_accessor :ref, :pass
     
@@ -106,7 +151,7 @@ class Blamer
     def initialize(addr)
       if addr =~ /^([^<@>]+)\s+<([^<@>]+@[^<@>]+)>$/
         @name   = $1
-        @emails = [$2].to_set
+        @emails = [$2]
         @full   = addr
       else
         @name = @full = addr
@@ -119,11 +164,20 @@ class Blamer
     end
     
     def merge(other)
-      @emails += other.emails
+      @emails = (@emails + other.emails).uniq
     end
     
     def email
       @emails.first
+    end
+    
+    def jabber_email(config)
+      @emails.each do |email|
+        user,  domain = email.split('@', 2)
+        jabber_domain = config.jabber_domain_for(domain)
+        return [user, jabber_domain].join('@') if jabber_domain
+      end
+      nil
     end
   end
 
@@ -150,7 +204,8 @@ class Blamer
 
   class ReportNotFoundError; end
   
-  def initialize(jabber_uri, reports_file, ci_url)
+  def initialize(config_file, jabber_uri, reports_file, ci_url)
+    @config  = Config.new(config_file)
     @reports = JSON.parse(File.read(reports_file)).map {|r| parse_report(r) }
     @jabber  = DRbObject.new(nil, jabber_uri)
     @ci_url  = ci_url
@@ -162,6 +217,9 @@ class Blamer
   end
   
   def send_message(author, batch)
+    jabber_email = author.jabber_email(@config)
+    return if jabber_email.nil?
+    
     commits = batch.commits_for(author)
     commit_text = commits.map(&:listing).join("\n")
     
@@ -212,7 +270,7 @@ class Blamer
     url = [@ci_url, '#', @project_name.gsub('.', ''), '-', @reports.last.ref].join
     message += "\n\n#{url}"
     
-    @jabber.deliver(author.email, message)
+    @jabber.deliver(jabber_email, message)
   end
 
   private
