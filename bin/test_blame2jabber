@@ -218,7 +218,10 @@ class Blamer
   
   def send_message(author, batch)
     jabber_email = author.jabber_email(@config)
-    return if jabber_email.nil?
+    if jabber_email.nil?
+      puts "No whitelisted addresses found for #{author.name} (#{author.emails.join(', ')})."
+      return
+    end
     
     commits = batch.commits_for(author)
     commit_text = commits.map(&:listing).join("\n")
@@ -270,6 +273,7 @@ class Blamer
     url = [@ci_url, '#', @project_name.gsub('.', ''), '-', @reports.last.ref].join
     message += "\n\n#{url}"
     
+    puts "Sending #{status.inspect} message to #{author.name} (#{jabber_email})."
     @jabber.deliver(jabber_email, message)
   end
 
