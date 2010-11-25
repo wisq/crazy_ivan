@@ -190,11 +190,16 @@ class Blamer
           "CI for #{@project_name} has been broken for at least #{@reports.count} builds.  Please fix it soon!"
         else
           failed_batch = commit_batch(index)
-          percents = batch.all_percents_changed
+          percents = failed_batch.all_percents_changed
           
           if percents.count == 1
-            name = percents[0][0].name
-            "#{percents.first.first.name} is responsible for the initial failure.  Please nag them about this."
+            failed_author = percents[0][0]
+            if failed_author == author
+              t_failed_commits = failed_batch.commits_for(failed_author).count == 1 ? 'commit' : 'commits'
+              "You are responsible for the initial failure.  Please fix or revert your failing #{t_failed_commits} ASAP."
+            else
+              "#{failed_author.name} is responsible for the initial failure.  Please nag them about this."
+            end
           else
             percents_text = percents.map {|a, p| "#{a.name(author)}: #{p.round}%" }.join("\n")
             "These are the likely candidates for the initial failure.  Please nag them about this.\n\n#{percents_text}"
