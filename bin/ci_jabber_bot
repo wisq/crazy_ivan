@@ -19,7 +19,8 @@ require 'thwait'
 require 'yaml'
 
 require 'rubygems'
-require 'xmpp4r-simple'
+require 'xmpp4r'
+require 'xmpp4r/roster'
 
 $stdout.sync = true # logging
 
@@ -30,50 +31,94 @@ class JabberBot
   end
 
   def self.launch(jabber_id, password, druby_uri)
+    client = Client.new(jabber_id)
+    server = Server.new(client, druby_uri)
+    
     puts "JabberBot is starting."
 
     Thread.abort_on_exception = true
-    client = Client.new(jabber_id, password)
-    server = Server.new(client, druby_uri)
+    client.connect(password)
+    server.start
 
     puts "JabberBot is ready."
 
-    threads = {
-      client.thread => 'Client',
-      server.thread => 'Server'
-    }
-
-    died = ThreadsWait.new(*threads.keys).next_wait
-    puts "#{threads[died]} has terminated, exiting."
-
-    threads.keys.map(&:exit)
-    ThreadsWait.all_wait(*threads.keys)
+    server.thread.join
+    
+    puts "JabberBot is exiting."
   end
 end
 
 class JabberBot::Client
   attr_reader :thread
 
-  def initialize(jabber_id, password)
-    @jabber = Jabber::Simple.new(jabber_id, password)
-    @jabber.status(nil, '')
-    @jabber.accept_subscriptions = true
-    @thread = Thread.new { receive_thread }
+  def initialize(jabber_id)
+    jid = Jabber::JID.new(jabber_id)
+    @jabber = Jabber::Client.new(jabber_id)
+    @deferred = {}
   end
 
-  def receive_thread
-    recv_method = method(:message_received)
-    while @jabber.connected?
-      @jabber.received_messages(&recv_method)
-      sleep(60)
+  def connect(password)
+    @jabber.connect
+    @jabber.auth(password)
+    @jabber.send(Jabber::Presence.new.set_type(:available))
+    @roster = Jabber::Roster::Helper.new(@jabber)
+
+    @jabber.add_message_callback do |msg|
+      message_received(msg)
+    end
+    @roster.add_subscription_request_callback do |roster_item, presence|
+      @roster.accept_subscription(presence.from)
+    end
+
+    @roster.add_subscription_callback do |roster_item, presence|
+      flush_deferred_queue(presence.from)
+    end
+    @roster.add_update_callback do |roster_item, presence|
+      flush_deferred_queue(presence.jid)
     end
   end
 
-  def deliver(email, message)
-    result = @jabber.deliver(email, message)
-    puts "Sent message to #{email}: #{message.inspect}"
+  def deliver(email, body)
+    jid = Jabber::JID.new(email)
+    msg = Jabber::Message.new(jid, body)
+    msg.type = :chat
 
-    result.class != Queue # true = sent, false = queued
+    if subscribed_to?(jid)
+      send_message(msg)
+    else
+      (@deferred[jid] ||= []) << msg
+      add_contact(jid)
+    end
+  end
+
+  private
+  
+  def send_message(msg)
+    @jabber.send(msg)
+    puts "Sent message to #{msg.to}: #{msg.body.inspect}"
+  end
+  
+  def subscribed_to?(jid)
+    if item = @roster.items[jid]
+      [:to, :both].include?(item.subscription)
+    else
+      false
+    end
+  end
+
+  def add_contact(jid)
+    request = Jabber::Presence.new
+    request.type = :subscribe
+    request.to   = jid
+    @jabber.send(request)
+  end
+
+  def flush_deferred_queue(jid)
+    return unless subscribed_to?(jid)
+    pending = @deferred.delete(jid) || []
+    pending.each do |msg|
+      send_message(msg)
+    end
   end
 
   def message_received(msg)
@@ -84,7 +129,11 @@ end
 class JabberBot::Server
   def initialize(client, uri)
     @client = client
-    DRb.start_service(uri, self)
+    @uri    = uri
+  end
+
+  def start
+    DRb.start_service(@uri, self)
   end
 
   def thread
