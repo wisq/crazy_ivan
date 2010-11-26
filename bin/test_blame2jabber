@@ -202,7 +202,7 @@ class Blamer
     end
   end
 
-  class ReportNotFoundError; end
+  class ReportNotFoundError < StandardError; end
   
   def initialize(config_file, jabber_uri, reports_file, ci_url)
     @config  = Config.new(config_file)
