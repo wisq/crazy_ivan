@@ -20,6 +20,11 @@
 # The config.yml file contains the following (all optional):
 #
 # ---
+# statuses:
+#   - :passing
+#   - :failing
+#   - :just_passed
+#   - :just_failed
 # whitelist:
 #   - good.domain
 #   - other.domain
@@ -29,6 +34,10 @@
 # authors:
 #   John Smith: jsmith@good.domain
 #   Author Guy: aguy@other.domain
+#
+# The statuses limits what conditions we send email out for.
+# Some projects may want to disable the ":passing" status to
+# highlight failures only.  (No statuses means all statuses.)
 #
 # The whitelist limits what domains to allow Jabber messages to.
 # (No whitelist means no limit.)
@@ -72,6 +81,7 @@ class Blamer
   class Config
     def initialize(file)
       data = YAML.load_file(file)
+      @statuses  = data['statuses']
       @whitelist = data['whitelist'] || []
       @aliases   = data['aliases']   || {}
 
@@ -88,6 +98,10 @@ class Blamer
       authors.each do |name, email|
         CommitAuthor.find_or_create("#{name} <#{email}>")
       end
+    end
+    
+    def status_enabled?(status)
+      @statuses.nil? || @statuses.include?(status)
     end
   end
 
@@ -184,6 +198,7 @@ class Blamer
   class Commit
     attr_reader :ref
     attr_accessor :author, :description, :additions, :deletions
+
     def initialize(ref)
       @ref = ref
       @additions = @deletions = 0
@@ -209,6 +224,13 @@ class Blamer
     @reports = JSON.parse(File.read(reports_file)).map {|r| parse_report(r) }
     @jabber  = DRbObject.new(nil, jabber_uri)
     @ci_url  = ci_url
+  end
+  
+  def send
+    unless @config.status_enabled?(stat = status)
+      puts "Status #{stat} is disabled."
+      return
+    end
 
     batch = commit_batch
     batch.authors.each do |author|
@@ -352,4 +374,4 @@ class Blamer
   end
 end
 
-Blamer.new(*ARGV)
+Blamer.new(*ARGV).send
