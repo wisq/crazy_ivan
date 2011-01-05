@@ -311,10 +311,10 @@
           $('#projects').append(tmpl("projectTemplate", {projectName: name, projectId: domId}));
           
           project.reports.sort(function (a, b) {
-            left  = Date.parse(a.timestamp.finish);
-            right = Date.parse(b.timestamp.finish);
+            left  = Date._parse(a.timestamp.finish);
+            right = Date._parse(b.timestamp.finish);
 
-            return right.compareTo(left);
+            return right - left;
           });
 
           if (project.reports.length > 0) {
