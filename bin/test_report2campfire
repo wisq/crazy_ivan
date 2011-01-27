@@ -101,9 +101,9 @@ exit_status = report['test']['exit_status']
 url = [ARGV[2], '#', name.gsub('.', ''), '-', version].join
 
 if exit_status == "0" || exit_status.nil?
-  campfire_room.message "PASS: #{name} built happily: #{url}"
+  campfire_room.message ":ok: PASS: #{name} built happily: #{url}"
 elsif exit_status == "123"
-  campfire_room.message "SOFT-PASS: #{name} built with some issues: #{url}"
+  campfire_room.message ":ok: SOFT-PASS: #{name} built with some issues: #{url}"
 else
-  campfire_room.message "FAIL: #{name} broke. Please take a look at #{url}"
+  campfire_room.message ":warning: FAIL: #{name} broke. Please take a look at #{url}"
 end
