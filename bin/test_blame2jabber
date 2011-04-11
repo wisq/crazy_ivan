@@ -289,7 +289,7 @@ class Blamer
           end
         end
 
-      "The following #{t_commits} #{t_have} have NOT fixed CI on #{@project_name}:\n\n#{commit_text}\n\n#{failed_text}"
+      "The following #{t_commits} #{t_have} NOT fixed CI on #{@project_name}:\n\n#{commit_text}\n\n#{failed_text}"
     end
     
     url = [@ci_url, '#', @project_name.gsub('.', ''), '-', @reports.last.ref].join
