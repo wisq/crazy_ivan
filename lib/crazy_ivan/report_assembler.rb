@@ -117,6 +117,7 @@ class ReportAssembler
     
     Dir.chdir(project_path) do
       version = runner.results[:version][:output]
+      return true if version == 'DO-NOT-RUN'
       tested_versions = @projects[runner.project_name].map {|r| r['version']['output'] }
       tested_versions.include?(version)
     end
