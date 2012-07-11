@@ -69,30 +69,33 @@ class TestRunner
       
       status = Open4::popen4(script_path(name)) do |pid, stdin, stdout, stderr|
         begin
-          stdin.close  # Close to prevent hanging if the script wants input
-        
+          stdin.reopen('/dev/null')  # Close to prevent hanging if the script wants input
+
           select_fds = {
             stdout => :output,
             stderr => :error
           }
           until select_fds.empty?
             ready_fds = select(select_fds.keys, nil, nil, 3600).first
-          
-            ready_fds.each do |fd|
-              if fd.eof?
-                select_fds.delete(fd)
-                next
-              end
-              
-              o = fd.readpartial(4096)
-              print o
 
-              key = select_fds[fd]
-              outputs[key] << escape(o)
-            
-              if options[:stream_test_results?]
-                @results[:test][key] = outputs[key]
-                @report_assembler.update_currently_building(self)
+            ready_fds.each do |fd|
+              begin
+                loop do
+                  o = fd.read_nonblock(4096)
+                  print o
+
+                  key = select_fds[fd]
+                  outputs[key] << escape(o)
+
+                  if options[:stream_test_results?]
+                    @results[:test][key] = outputs[key]
+                    @report_assembler.update_currently_building(self)
+                  end
+                end
+              rescue Errno::EAGAIN
+                # go back to select loop
+              rescue EOFError
+                select_fds.delete(fd)
               end
             end
           end
