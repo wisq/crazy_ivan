@@ -76,8 +76,18 @@ class TestRunner
             stderr => :error
           }
           until select_fds.empty?
-            ready_fds = select(select_fds.keys, nil, nil, 3600).first
-          
+            ready_fds = select(select_fds.keys, nil, nil, 900).first
+
+            if ready_fds.nil?
+              puts "Timeout, killing child."
+              Process.kill('TERM', pid)
+
+              ready_fds = select(select_fds.keys, nil, nil, 5).first
+              Process.kill('KILL', pid) rescue nil if ready_fds.nil?
+
+              ready_fds = []
+            end
+
             ready_fds.each do |fd|
               if fd.eof?
                 select_fds.delete(fd)
