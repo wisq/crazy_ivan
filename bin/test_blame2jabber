@@ -57,6 +57,7 @@ require 'drb'
 
 require 'rubygems'
 require 'json'
+require 'yaml'
 
 class Array
   def index_many_by
