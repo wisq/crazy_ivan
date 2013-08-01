@@ -1,0 +1,41 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'uri'
+require 'net/http'
+require 'json'
+
+class Flowdock
+
+	def self.notify(message, token, subject, link, from_address)
+    Net::HTTP.post_form(URI("http://shopify-spy.herokuapp.com/notice/" + token), :content => message, :subject => subject, :link => link, :from_address => from_address)
+  end
+
+end
+
+flowdock_token = URI.parse(ARGV[0])
+
+report = JSON.parse(STDIN.read)
+name = report['project_name']
+version = report['version']['output']
+exit_status = report['test']['exit_status']
+
+
+if exit_status == "0" || exit_status.nil?
+	subject = "CI: Branch #{name} passed"
+	message = "Everyone congratulate #{}"
+	link = "#{url}"
+	from_address = "sweetwonderfulsuccess@gmail.com"
+elsif exit_status == "123"
+	subject = "CI: Branch #{name} soft-passed; it built with some issues."
+	message = ""
+	link = "#{url}"
+else
+	subject = "CI: Branch #{name} failed."
+	message = "Everyone blame #{}"
+	link = "#{url}"
+	from_address = "horriblehorriblefailure@gmail.com"
+end
+
+
+Flowdock.notify message, flowdock_token subject, link, from_address
