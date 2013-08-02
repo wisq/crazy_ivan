@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'rubygems'
 require 'uri'
 require 'net/http'
 require 'json'
@@ -13,27 +12,27 @@ class Flowdock
 
 end
 
-flowdock_token = URI.parse(ARGV[0])
+flowdock_token = ARGV[0]
 
 report = JSON.parse(STDIN.read)
-name = report['project_name']
-version = report['version']['output']
+project_name = report['project_name']
 exit_status = report['test']['exit_status']
-test_output = report['test']['output']
-
+test_output = report['test']['output'].match(/\n\s*\* (\w*) (.*): (.*)/)
+version = test_output[1]
+name = test_output[2]
+branch_name = test_output[3]
 
 if exit_status == "0" || exit_status.nil?
-	subject = "CI: #{name} passed"
-	message = ""
+	subject = "CI: #{project_name}   passed"
+	message = "Branch #{version}: \"#{branch_name}\" by #{name} passed"
 	from_address = "sweetwonderfulsuccess@gmail.com"
 elsif exit_status == "123"
-	subject = "CI: #{name} soft-passed; it built with some issues."
-	message = ""
+	subject = "CI: #{project_name} soft passed."
+	message = "Branch #{version}: \"#{branch_name}\" by #{name} built with some issues."
 else
-	subject = "CI: Branch #{name} failed."
-	message = ""
+	subject = "CI: #{project_name} failed."
+	message = "Branch #{version}: \"#{branch_name}\" by #{name} failed."
 	from_address = "horriblehorriblefailure@gmail.com"
 end
 
-
-Flowdock.notify message, flowdock_token subject, link, from_address
+Flowdock.notify message, flowdock_token, subject, link, from_address
