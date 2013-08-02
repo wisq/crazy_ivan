@@ -6,8 +6,8 @@ require 'json'
 
 class Flowdock
 
-	def self.notify(message, token, subject, link, from_address)
-    Net::HTTP.post_form(URI("http://shopify-spy.herokuapp.com/notice/" + token), :content => message, :subject => subject, :link => link, :from_address => from_address)
+	def self.notify(message, token, subject, from_address)
+    Net::HTTP.post_form(URI("http://shopify-spy.herokuapp.com/notice/" + token), :content => message, :subject => subject, :from_address => from_address)
   end
 
 end
@@ -35,4 +35,4 @@ else
 	from_address = "horriblehorriblefailure@gmail.com"
 end
 
-Flowdock.notify message, flowdock_token, subject, link, from_address
+Flowdock.notify message, flowdock_token, subject, from_address
