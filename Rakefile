@@ -28,7 +28,7 @@ spec = Gem::Specification.new do |s|
   
   s.email = 'edward@edwardog.net'
   s.homepage = "http://github.com/edward/crazy_ivan"
-  s.executables = ["crazy_ivan", "ci_jabber_bot", "test_report2campfire", "test_blame2jabber"]
+  s.executables = ["crazy_ivan", "ci_jabber_bot", "test_report2campfire", "test_blame2jabber", "test_report2flowdock"]
   s.default_executable = "crazy_ivan"
   s.rubyforge_project = "crazy_ivan"
 
